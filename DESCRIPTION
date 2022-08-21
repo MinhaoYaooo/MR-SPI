@@ -1,0 +1,12 @@
+Package: MR.SPI
+Type: Package
+Title: Mendelian randomization that select valid IVs and perform post-selection inference
+Version: 0.1.0
+Author: Minhao Yao, Zijian Guo, Zhonghua Liu
+Maintainer: Minhao Yao <mhyao@connect.hku.hk>
+Description: This package provides functions for two sample Mendelian randomization with possibly many invalid instrumental variables, which can select valid IVs and provide reliable confidence intervals of the causal effect.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports: MASS, Matrix, stats, igraph, intervals
+RoxygenNote: 7.1.2
