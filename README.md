@@ -65,5 +65,5 @@ If we wish to construct the uniformly valid confidence interrval, then we can se
 ```
 library(intervals)
 
-mr.spi.sample <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, max_clique = FALSE, unif = TRUE, Sampling = TRUE)
+mr.spi.unif <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, max_clique = FALSE, unif = TRUE)
 ```
