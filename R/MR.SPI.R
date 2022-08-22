@@ -127,6 +127,9 @@ MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1
     ci = c(betaHat-stats::qnorm(1-alpha/2)*sqrt(betaVarHat), betaHat+stats::qnorm(1-alpha/2)*sqrt(betaVarHat))
   }
 
+
+  ########## Uniform valid confidence interval ##########
+
   if(unif){
 
     var.beta = diag(V_Gamma)/gamma^2 + diag(V_gamma)*Gamma^2/gamma^4
@@ -251,9 +254,11 @@ Searching.CI.sampling <- function(gamma, Gamma, V_gamma, V_Gamma, InitiSet, n1, 
   if(is.null(rho)) rho = (log(min(n1,n2))/M)^(1/(2*length(InitiSet)))/6 # initial rho if not specified
 
   if(filtering){
-    temp = abs(t(t(Gen.mat[,(pz+1):(2*pz)]) / sqrt(diag(V_gamma))))
+    temp1 = abs(t(t(Gen.mat[,InitiSet])/sqrt(diag(V_Gamma)[InitiSet])))
+    temp2 = abs(t(t(Gen.mat[,pz+InitiSet])/sqrt(diag(V_gamma)[InitiSet])))
+    temp = cbind(temp1, temp2)
     temp = apply(temp, MARGIN=1, FUN=max)
-    temp = (temp <= stats::qnorm(1-alpha/(2*pz)))
+    temp = (temp <= stats::qnorm(1-alpha/(4*length(InitiSet))))
     Gen.mat = Gen.mat[temp,]
     M = sum(temp)
   }
