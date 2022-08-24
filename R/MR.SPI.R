@@ -205,7 +205,7 @@ grid.CI <- function(CI.matrix, grid.size){
   return(grid.seq)
 }
 
-Searching.CI <- function(gamma, Gamma, V_gamma, V_Gamma, alpha=0.05, InitiSet, beta.grid){
+Searching.CI <- function(gamma, Gamma, V_gamma, V_Gamma, InitiSet, beta.grid, alpha=0.05){
   threshold.size = length(InitiSet)/2
   n.beta = length(beta.grid)
   pz = dim(V_Gamma)[1]
