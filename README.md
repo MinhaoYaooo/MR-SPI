@@ -1,6 +1,6 @@
 # MR-SPI
 
-`MR.SPI` is an R package to conduct two-sample Mendelian randomization by first selecting valid IVs and then perform post-selection inference. The inputs of `MR.SPI` are summary statistics which can be obtained in Genome-Wide Association Studies (GWAS). The outputs of `MR.SPI` are the estimation of causal effect and its corresponding confidence interval, and a set of valid IVs <img src="https://render.githubusercontent.com/render/math?math=\hat{V}">.
+`MR.SPI` is an R package to conduct two-sample Mendelian randomization by first selecting valid IVs and then perform post-selection inference. The inputs of `MR.SPI` are summary statistics which can be obtained in Genome-Wide Association Studies (GWAS). The outputs of `MR.SPI` are the estimation of causal effect and its corresponding confidence interval, and the set of valid IVs.
 
 # Installation
 You can install the development version of `MR.SPI` from Github via the `devtools` package.
