@@ -10,7 +10,7 @@
 #' @param freq a numeric vector of allele frequencies to adjust for the regression coefficients and the standard errors, with default NULL
 #' @param tuning a numeric scalar value tuning parameter for selecting the valid IVs, with default 1
 #' @param max_clique an option to replace the majority and plurality voting procedures with finding maximal clique in the IV voting matrix, with default TRUE
-#' @param unif an option to produce uniformly valid confidence interval, with default FALSE
+#' @param robust an option to produce robust confidence interval, with default FALSE
 #' @param alpha a numeric scalar value between 0 and 1 indicating the significance level for the confidence interval, with default 0.05
 #' @param a grid size for constructing beta grids, with default 0.6
 #' @param Sampling use the sampling method if TRUE; else use the proposed searching method, with default TRUE (only applicable if unif=TRUE)
@@ -18,6 +18,7 @@
 #' @param M sampling times, with default value 1000 (only applicable if unif=TRUE)
 #' @param prop proportion of intervals kept when sampling, with default value 0.1 (only applicable if unif=TRUE)
 #' @param filtering Filtering the resampled data or not, with default value TRUE (only applicable if unif=TRUE)
+#' @param verbose a logical value to determine whether to print detailed results, the default value is TRUE.
 #' @return \code{MR.SPI} return a list containing the following:
 #'     \item{\code{betaHat}}{a numeric scalar denoting the estimate of causal effect.}
 #'     \item{\code{beta.sdHat}}{a numeric scalar denoting the estimated standard error of betaHat.}
@@ -26,8 +27,8 @@
 #'     \item{\code{VHat}}{a numeric vector denoting the set of valid IVs}
 #'     \item{\code{voting.mat}}{a matrix of voting. if (i,j)-th entry=1, then i-th SNP and j-th SNP vote for each other to be a valid IV.}
 #' @export
-MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1, max_clique=TRUE, unif=FALSE,
-                   alpha=0.05, a=0.6, Sampling=TRUE, rho=NULL, M=1000, prop=0.1, filtering=TRUE){
+MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1, max_clique=TRUE, robust=FALSE,
+                   alpha=0.05, a=0.6, Sampling=TRUE, rho=NULL, M=1000, prop=0.1, filtering=TRUE, verbose=TRUE){
 
   if(!is.null(freq)){
     gamma <- gamma * sqrt(2*freq*(1-freq))
@@ -37,6 +38,8 @@ MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1
   }
 
   pz = length(Gamma)
+
+  if(verbose){ cat(paste0("\n",pz," IVs are used in this analysis.\n")) }
 
   V_gamma <- matrix(nrow = pz, ncol = pz)
   V_Gamma <- matrix(nrow = pz, ncol = pz)
@@ -51,13 +54,117 @@ MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1
         V_Gamma[i,j] <- V_Gamma[j,i] <- Gamma[i]*Gamma[j] / n2
       }
     }
-  } # Construct V_gamma_hat and V_Gamma_hat based on the formula
+  } # Construct V_gamma_hat and V_Gamma_hat
 
-  SHat <- (1:pz)[(abs(gamma) >= (sqrt(log(n1)*tuning*diag(V_gamma))))]
+  SHat <- (1:pz)[(abs(gamma) >= (sqrt(log(n1)*diag(V_gamma))))]
+
+  if(verbose){ cat(paste0("MR-SPI identifies ",length(SHat)," relevant IVs: ",paste(SHat, collapse = ' '),".\n")) }
+
+  voting.results <- Voting.Estimating(gamma, Gamma, V_gamma, V_Gamma, SHat, tuning = tuning, n1, n2, max_clique, alpha)
+
+  if(verbose & max_clique & !robust){
+    if(length(voting.results$VHat[[1]])==1){
+      cat(paste0("Each maximum clique has only one IV. Switch to plurality/majority voting.\n"))
+      max_clique=FALSE
+      voting.results <- Voting.Estimating(gamma, Gamma, V_gamma, V_Gamma, SHat, tuning = tuning, n1, n2, max_clique, alpha)
+    }else{
+      cat(paste0("Maximum clique is applied for the voting procedure. MR-SPI identifies ",
+                 length(voting.results$VHat)," Maximum Cliques.\n"))
+    }
+  }
+
+
+  ########## Uniform valid confidence interval ##########
+
+  if(robust){
+
+    if(verbose){ cat(paste0("Calculating robust confidence interval for the causal effect.\n")) }
+
+    voting.results <- Voting.Estimating(gamma, Gamma, V_gamma, V_Gamma, SHat, tuning = tuning, n1, n2, max_clique=FALSE, alpha)
+    VHat = voting.results$VHat; betaHat = voting.results$betaHat; betaVarHat = voting.results$beta.sdHat^2
+    VHats.boot.sym = voting.results$voting.mat
+
+    var.beta = diag(V_Gamma)/gamma^2 + diag(V_gamma)*Gamma^2/gamma^4
+    var.beta = var.beta[VHat]
+    CI.init = matrix(NA, nrow=length(VHat), ncol=2)
+    CI.init[,1] = (Gamma/gamma)[VHat] - sqrt(log(n1)*var.beta)
+    CI.init[,2] = (Gamma/gamma)[VHat] + sqrt(log(n1)*var.beta)
+    uni = intervals::Intervals(CI.init)
+    CI.init.union = as.matrix(intervals::interval_union(uni))
+    beta.grid = grid.CI(CI.init.union, grid.size=(min(n1,n2))^{-a})
+
+    if(Sampling){
+      ## Sampling Method
+      CI.sampling = Searching.CI.sampling(gamma, Gamma, V_gamma, V_Gamma, InitiSet=VHat, n1=n1, n2=n2, beta.grid = beta.grid,
+                                          alpha=alpha, rho=rho, M=M, prop=prop, filtering=filtering)
+      CI=CI.sampling$CI
+      rule=CI.sampling$rule
+    }else{
+      ## Searching Method
+      CI.searching = Searching.CI(gamma, Gamma, V_gamma, V_Gamma, InitiSet = VHat, alpha=alpha,
+                                  beta.grid = beta.grid)
+      CI=CI.searching$CI
+      rule=CI.searching$rule
+    }
+  }
+
+  if(robust){
+    returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=CI,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
+  }else{
+    returnList <- voting.results
+  }
+
+  if(verbose){
+    if(max_clique & !robust){
+      for (i.clique in 1:length(voting.results$VHat)) {
+        cat(paste0("-----Maximum Clique ",i.clique,"-----\n",
+                   "MR-SPI identifies ",length(voting.results$VHat[[i.clique]])," valid IVs: ",paste(voting.results$VHat[[i.clique]],collapse = " "),".\n"))
+        cat(paste0('Estimated Causal Effect by MR.SPI: ', round(returnList$betaHat[[i.clique]],3),'\n'))
+        cat(paste0('Confidence Interval: (',round(returnList$ci[[i.clique]][1],3),',',round(returnList$ci[[i.clique]][2],3),')\n'))
+      }
+      if(length(voting.results$VHat)>1){cat("Multiple maximum cliques are found. Additional knowledge is required to select the suitable clique.\n")}
+    }else{
+      cat(paste0("MR-SPI identifies ",length(voting.results$VHat)," valid IVs: ",paste(voting.results$VHat, collapse = " "),".\n"))
+      cat(paste0('Estimated Causal Effect by MR.SPI: ', round(returnList$betaHat,3),'\n'))
+      if(robust){
+        cat(paste0('Robust Confidence Interval: (',round(returnList$ci[1],3),',',round(returnList$ci[2],3),')\n'))
+      }else{
+        cat(paste0('Confidence Interval: (',round(returnList$ci[1],3),',',round(returnList$ci[2],3),')\n'))
+      }
+    }
+  }
+
+  return(returnList)
+}
+
+
+
+########## Helpful Functions ##########
+
+var_TSHT <- function(gamma, Gamma, V_gamma, V_Gamma){
+
+  Var_Gg <- t(gamma) %*% V_Gamma %*% gamma + t(Gamma) %*% V_gamma %*% Gamma
+  Var_gg <- 4 * t(gamma) %*% V_gamma %*% gamma
+  Cov_Gg <- 2 * t(Gamma) %*% V_gamma %*% gamma
+
+  E_Gg <- sum(gamma*Gamma)
+  E_gg <- sum(gamma^2) + sum(diag(V_gamma))
+
+  sig2 <- (E_Gg/E_gg)^2 * (Var_Gg/E_Gg^2 + Var_gg / E_gg^2 - 2*Cov_Gg/(E_Gg*E_gg) )
+
+  return(sig2)
+}
+
+
+
+Voting.Estimating <- function(gamma, Gamma, V_gamma, V_Gamma, SHat, tuning, n1, n2, max_clique, alpha){
+
+  pz = length(gamma)
 
   SHat.bool = rep(FALSE,pz); SHat.bool[SHat] = TRUE
 
   nCand = length(SHat)
+
   VHats.bool = matrix(FALSE,nCand,nCand); colnames(VHats.bool) = rownames(VHats.bool) = SHat
 
   for(j in SHat) {
@@ -86,8 +193,9 @@ MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1
   if (max_clique) {
     voting.graph <- igraph::as.undirected(igraph::graph_from_adjacency_matrix(VHats.boot.sym))
     max.clique <- igraph::largest.cliques(voting.graph)
-    VHat <- unique(igraph::as_ids(Reduce(c,max.clique))) # take the union if multiple max cliques exist
-    VHat <- sort(as.numeric(VHat))
+    VHat = lapply(max.clique, FUN=function(x) sort(as.numeric(names(x))))
+    n.VHat = length(VHat[[1]])
+    #if(length(VHat)==1) VHat = VHat[[1]]
   } else{
     V.set<-NULL
     for(index in VM.p){
@@ -101,102 +209,47 @@ MR.SPI <- function(gamma, Gamma, se_gamma, se_Gamma, n1, n2, freq=NULL, tuning=1
   }
 
   if (max_clique) {
-    max.clique.mat <- matrix(0,nrow = length(max.clique),ncol = length(max.clique[[1]]))
-    CI.temp <- matrix(0,nrow = length(max.clique), ncol = 2)
-    beta.temp <- matrix(0,nrow = length(max.clique), ncol = 1)
-    betavar.temp <- matrix(0,nrow = length(max.clique), ncol = 1)
-    for (i in 1:length(max.clique)) {
-      temp <- SHat[sort(as.numeric(max.clique[[i]]))]
-      max.clique.mat[i,] <- temp
-      betaHat = sum(gamma[temp] * Gamma[temp]) / sum(gamma[temp]^2)
-      betaVarHat = var_TSHT(gamma[temp], Gamma[temp], V_gamma[temp,temp], V_Gamma[temp,temp])
-      ci = c(betaHat - stats::qnorm(1-alpha/2) * sqrt(betaVarHat),betaHat + stats::qnorm(1-alpha/2) * sqrt(betaVarHat))
-      CI.temp[i,] <- ci
-      beta.temp[i,] <- betaHat
-      betavar.temp[i,] <- betaVarHat
+    betaHat = beta.sdHat = ci = vector("list", length(VHat))
+    for(i.VHat in 1:length(VHat)){
+      VHat.i = VHat[[i.VHat]]
+      betaHat[[i.VHat]] = sum(gamma[VHat.i] * Gamma[VHat.i]) / sum(gamma[VHat.i]^2)
+      betaVarHat.i = var_TSHT(gamma[VHat.i], Gamma[VHat.i], V_gamma[VHat.i,VHat.i], V_Gamma[VHat.i,VHat.i])
+      beta.sdHat[[i.VHat]] <- sqrt(betaVarHat.i)
+      ci[[i.VHat]] = c(betaHat[[i.VHat]] - stats::qnorm(1-alpha/2) * sqrt(betaVarHat.i),betaHat[[i.VHat]] + stats::qnorm(1-alpha/2) * sqrt(betaVarHat.i))
     }
-    uni<- intervals::Intervals(CI.temp)
-    ###### construct the confidence interval by taking a union
-    CI.union<-as.matrix(intervals::interval_union(uni))
+    returnList <- list(betaHat=betaHat,beta.sdHat = beta.sdHat,ci=ci,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
 
+    # max.clique.mat <- matrix(0,nrow = length(max.clique),ncol = length(max.clique[[1]]))
+    # CI.temp <- matrix(0,nrow = length(max.clique), ncol = 2)
+    # beta.temp <- matrix(0,nrow = length(max.clique), ncol = 1)
+    # betavar.temp <- matrix(0,nrow = length(max.clique), ncol = 1)
+    # for (i in 1:length(max.clique)) {
+    #   temp <- SHat[sort(as.numeric(max.clique[[i]]))]
+    #   max.clique.mat[i,] <- temp
+    #   betaHat = sum(gamma[temp] * Gamma[temp]) / sum(gamma[temp]^2)
+    #   betaVarHat = var_TSHT(gamma[temp], Gamma[temp], V_gamma[temp,temp], V_Gamma[temp,temp])
+    #   ci = c(betaHat - stats::qnorm(1-alpha/2) * sqrt(betaVarHat),betaHat + stats::qnorm(1-alpha/2) * sqrt(betaVarHat))
+    #   CI.temp[i,] <- ci
+    #   beta.temp[i,] <- betaHat
+    #   betavar.temp[i,] <- betaVarHat
+    # }
+    # uni <- intervals::Intervals(CI.temp)
+    # ##### construct the confidence interval by taking a union
+    # CI.union<-as.matrix(intervals::interval_union(uni))
+    # #returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=CI.union,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
+    # returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=CI.union,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
   } else{
     betaHat <- sum(gamma[VHat] * Gamma[VHat]) / sum(gamma[VHat]^2)
 
     betaVarHat <- var_TSHT(gamma[VHat], Gamma[VHat], V_gamma[VHat,VHat], V_Gamma[VHat,VHat])
 
     ci = c(betaHat-stats::qnorm(1-alpha/2)*sqrt(betaVarHat), betaHat+stats::qnorm(1-alpha/2)*sqrt(betaVarHat))
-  }
 
-
-  ########## Uniform valid confidence interval ##########
-
-  if(unif){
-
-    var.beta = diag(V_Gamma)/gamma^2 + diag(V_gamma)*Gamma^2/gamma^4
-    var.beta = var.beta[VHat]
-    CI.init = matrix(NA, nrow=length(VHat), ncol=2)
-    CI.init[,1] = (Gamma/gamma)[VHat] - sqrt(log(n1)*var.beta)
-    CI.init[,2] = (Gamma/gamma)[VHat] + sqrt(log(n1)*var.beta)
-    uni = intervals::Intervals(CI.init)
-    CI.init.union = as.matrix(intervals::interval_union(uni))
-    beta.grid = grid.CI(CI.init.union, grid.size=(min(n1,n2))^{-a})
-
-    if(Sampling){
-      ## Sampling Method
-      CI.sampling = Searching.CI.sampling(gamma, Gamma, V_gamma, V_Gamma, InitiSet=VHat, n1=n1, n2=n2, beta.grid = beta.grid,
-                                          alpha=alpha, rho=rho, M=M, prop=prop, filtering=filtering)
-      CI=CI.sampling$CI
-      rule=CI.sampling$rule
-    }else{
-      ## Searching Method
-      CI.searching = Searching.CI(gamma, Gamma, V_gamma, V_Gamma, InitiSet = VHat, alpha=alpha,
-                                  beta.grid = beta.grid)
-      CI=CI.searching$CI
-      rule=CI.searching$rule
-    }
-
-  }
-
-
-  if(unif){
-    returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=CI,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
-  }else{
-    if (max_clique) {
-      returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=CI.union,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
-    } else {
-      returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=ci,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
-    }
-  }
-
-  cat(paste0(pz,' SNPs used as candidate instruments. MR.SPI identifies ',length(SHat),' relevant instruments and ',length(VHat),' valid instruments.\n'))
-  cat(paste0('Estimated Causal Effect by MR.SPI: ', round(betaHat,3),'\n'))
-  if(unif){
-    cat(paste0('Uniform Confidence Interval: (',round(returnList$ci[1],3),' , ',round(returnList$ci[2],3),')\n\n'))
-  }else{
-    cat(paste0('Conditional Confidence Interval: (',round(returnList$ci[1],3),' , ',round(returnList$ci[2],3),')\n\n'))
+    returnList <- list(betaHat=betaHat,beta.sdHat = sqrt(betaVarHat),ci=ci,SHat=SHat,VHat=VHat,voting.mat=VHats.boot.sym)
   }
 
   return(returnList)
 }
-
-
-
-########## Helpful Functions ##########
-
-var_TSHT <- function(gamma, Gamma, V_gamma, V_Gamma){
-
-  Var_Gg <- t(gamma) %*% V_Gamma %*% gamma + t(Gamma) %*% V_gamma %*% Gamma
-  Var_gg <- 4 * t(gamma) %*% V_gamma %*% gamma
-  Cov_Gg <- 2 * t(Gamma) %*% V_gamma %*% gamma
-
-  E_Gg <- sum(gamma*Gamma)
-  E_gg <- sum(gamma^2) + sum(diag(V_gamma))
-
-  sig2 <- (E_Gg/E_gg)^2 * (Var_Gg/E_Gg^2 + Var_gg / E_gg^2 - 2*Cov_Gg/(E_Gg*E_gg) )
-
-  return(sig2)
-}
-
 
 grid.CI <- function(CI.matrix, grid.size){
   d = dim(CI.matrix)[1]

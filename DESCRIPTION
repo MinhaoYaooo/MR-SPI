@@ -8,5 +8,5 @@ Description: This package provides functions for two sample Mendelian randomizat
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-Imports: MASS, Matrix, stats, igraph, intervals
-RoxygenNote: 7.1.2
+Imports: MASS, Matrix, stats, igraph, intervals, ggplot2
+RoxygenNote: 7.2.3

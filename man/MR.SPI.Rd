@@ -14,14 +14,15 @@ MR.SPI(
   freq = NULL,
   tuning = 1,
   max_clique = TRUE,
-  unif = FALSE,
+  robust = FALSE,
   alpha = 0.05,
   a = 0.6,
   Sampling = TRUE,
   rho = NULL,
   M = 1000,
   prop = 0.1,
-  filtering = TRUE
+  filtering = TRUE,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -43,7 +44,7 @@ MR.SPI(
 
 \item{max_clique}{an option to replace the majority and plurality voting procedures with finding maximal clique in the IV voting matrix, with default TRUE}
 
-\item{unif}{an option to produce uniformly valid confidence interval, with default FALSE}
+\item{robust}{an option to produce robust confidence interval, with default FALSE}
 
 \item{alpha}{a numeric scalar value between 0 and 1 indicating the significance level for the confidence interval, with default 0.05}
 
@@ -58,6 +59,8 @@ MR.SPI(
 \item{prop}{proportion of intervals kept when sampling, with default value 0.1 (only applicable if unif=TRUE)}
 
 \item{filtering}{Filtering the resampled data or not, with default value TRUE (only applicable if unif=TRUE)}
+
+\item{verbose}{a logical value to determine whether to print detailed results, the default value is TRUE.}
 }
 \value{
 \code{MR.SPI} return a list containing the following:
