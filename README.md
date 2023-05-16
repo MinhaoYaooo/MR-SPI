@@ -60,10 +60,10 @@ se_Gamma <- as.numeric(GWAS2$std.err); se_gamma <- as.numeric(GWAS1$std.err);
 mr.spi.default <- MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2)
 ```
 
-If we wish to construct the uniformly valid confidence interrval, then we can set `unif=TRUE`:
+If we wish to construct a confidence interval that is robust to finite-sample IV selection error, then we set `robust=TRUE`:
 
 ```
 library(intervals)
 
-mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, max_clique = FALSE, robust = TRUE)
+mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, robust = TRUE)
 ```
