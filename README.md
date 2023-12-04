@@ -45,8 +45,8 @@ After generating two samples and their corresponding phenotypes, we calculate th
 ```
 library(bigstatsr)
 
-GWAS1 <- big_univLinReg(X = as_FBM(Z1), y.train = D1) # calculate summary statistics of D~Z
-GWAS2 <- big_univLinReg(X = as_FBM(Z2), y.train = Y2) # calculate summary statistics of Y~Z
+GWAS1 <- big_univLinReg(X = as_FBM(Z1), y.train = D1) # calculate summary statistics of the exposure in sample 1.
+GWAS2 <- big_univLinReg(X = as_FBM(Z2), y.train = Y2) # calculate summary statistics of the outcome in sample 2.
 ```
 
 Then with the summary statistics, we can estimate the causal effect with `MR.SPI` and the corresponding default confidence interval:
