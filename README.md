@@ -49,7 +49,7 @@ GWAS1 <- big_univLinReg(X = as_FBM(Z1), y.train = D1) # calculate summary statis
 GWAS2 <- big_univLinReg(X = as_FBM(Z2), y.train = Y2) # calculate summary statistics of the outcome in sample 2.
 ```
 
-Then with the summary statistics, we can estimate the causal effect with `MR.SPI` and the corresponding default confidence interval:
+Then with the summary statistics, we can estimate the causal effect with `MR.SPI` and the corresponding standard confidence interval:
 
 ```
 library(igraph)
@@ -57,7 +57,7 @@ library(igraph)
 GammaHat = as.numeric(GWAS2$estim); gammaHat = as.numeric(GWAS1$estim) 
 se_Gamma <- as.numeric(GWAS2$std.err); se_gamma <- as.numeric(GWAS1$std.err);
 
-mr.spi.default <- MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2)
+mr.spi.standard <- MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2)
 ```
 
 If we wish to construct a confidence interval that is robust to finite-sample IV selection error, then we set `robust=TRUE`:
