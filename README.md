@@ -70,7 +70,7 @@ mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, robust = 
 
 # Real Data Example
 
-In this example, we analyze the causal effect of TREM2 on Alzheimer's disease. The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.496443v1.supplementary-material):
+In this example, we analyze the causal effect of TREM2 on Alzheimer's disease (AD). The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.496443v1.supplementary-material):
 
 ```
 library(ieugwasr)
@@ -89,5 +89,23 @@ colnames(protein.dat.process) <- c("chr","pos","id.exposure","SNP","eaf.exposure
                                    "effect_allele.exposure","other_allele.exposure")             # rename the columns
 
 exp_dat <- protein.dat.process[protein.dat.process$id.exposure=='TREM2',]                        # extract the summary statistics for TREM2
+```
+Then, we extract the outcome data for AD, which can be downloaded [HERE](https://ctg.cncr.nl/software/summary_statistics):
+```
+AD <- fread('AD_sumstats_Jansenetal_2019sept.txt')
+AD <- format_data(AD, type = 'outcome', 
+                  snp_col = 'SNP',
+                  beta_col = 'BETA',
+                  se_col = 'SE',
+                  eaf_col = 'EAF',
+                  effect_allele_col = 'A1',
+                  other_allele_col = 'A2',
+                  pval_col = 'P',
+                  samplesize_col = 'Nsum', 
+                  chr_col = 'CHR',
+                  pos_col = 'BP')
+
+out_dat <- AD[AD$SNP %in% exp_dat$SNP,]
+dat <- harmonise_data(exp_dat, out_dat, action=1)
 ```
 
