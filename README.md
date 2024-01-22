@@ -68,7 +68,7 @@ library(intervals)
 mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, robust = TRUE)
 ```
 
-# Real Data Example
+# Real Data Example: Causal Effect of TREM2 on Alzheimer's Disease
 
 In this example, we analyze the causal effect of TREM2 on Alzheimer's disease (AD). The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.496443v1.supplementary-material):
 
@@ -108,4 +108,18 @@ AD <- format_data(AD, type = 'outcome',
 out_dat <- AD[AD$SNP %in% exp_dat$SNP,]
 dat <- harmonise_data(exp_dat, out_dat, action=1)
 ```
+We then can call the function `MR.SPI` for robust MR analysis:
+```
+> MR.SPI(gamma = dat$beta.exposure, Gamma = dat$beta.outcome, 
++        se_gamma = dat$se.exposure, se_Gamma = dat$se.outcome,
++        n1 = 54306, n2 =  455258, freq = dat$eaf.exposure, 
++        max_clique = TRUE, verbose = TRUE)
 
+7 IVs are used in this analysis.
+MR-SPI identifies 7 relevant IVs: 1 2 3 4 5 6 7.
+Maximum clique is applied for the voting procedure. MR-SPI identifies 1 Maximum Cliques.
+-----Maximum Clique 1-----
+MR-SPI identifies 6 valid IVs: 2 3 4 5 6 7.
+Estimated Causal Effect by MR.SPI: -0.042
+Confidence Interval: (-0.052,-0.033)
+```
