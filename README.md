@@ -123,3 +123,8 @@ MR-SPI identifies 6 valid IVs: 2 3 4 5 6 7.
 Estimated Causal Effect by MR.SPI: -0.042
 Confidence Interval: (-0.052,-0.033)
 ```
+In this relationship, MR-SPI detects one invalid IV (the first SNP):
+```
+> print(dat$SNP[1])
+[1] "rs10919543"
+```
