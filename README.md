@@ -67,3 +67,28 @@ library(intervals)
 
 mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, robust = TRUE)
 ```
+
+# Real Data Example
+
+In this example, we analyze the causal effect of TREM2 on Alzheimer's disease. The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.
+496443v1.supplementary-material):
+
+```
+library(ieugwasr)
+library(TwoSampleMR)
+library(MR.SPI)
+library(dplyr)
+library(stringr)
+library(data.table)
+
+protein.dat <- openxlsx::read.xlsx("SNPs.xlsx", sheet = 1)                                       # read the proteomics data
+protein.list <- unique(protein.dat$Assay.Target)                                                 # filter the unique proteins
+info <- str_split_fixed(protein.dat$`Variant.ID.(CHROM:GENPOS.(hg37):A0:A1:imp:v1)`,":",6)       # extract the position information
+protein.dat.process <- protein.dat[,c(2,3,9,11,12,13,14,15)]                                     # extract useful columns
+protein.dat.process$A1 <- info[,4]; protein.dat.process$A2 <- info[,3]                           # add allele information
+colnames(protein.dat.process) <- c("chr","pos","id.exposure","SNP","eaf.exposure","beta.exposure","se.exposure","pval.exposure",
+                                   "effect_allele.exposure","other_allele.exposure")             # rename the columns
+
+exp_dat <- protein.dat.process[protein.dat.process$id.exposure=='TREM2',]                        # extract the summary statistics for TREM2
+```
+
