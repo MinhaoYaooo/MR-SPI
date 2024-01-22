@@ -70,8 +70,7 @@ mr.spi.robust <-MR.SPI(gammaHat, GammaHat, se_gamma, se_Gamma, n1, n2, robust = 
 
 # Real Data Example
 
-In this example, we analyze the causal effect of TREM2 on Alzheimer's disease. The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.
-496443v1.supplementary-material):
+In this example, we analyze the causal effect of TREM2 on Alzheimer's disease. The exposure data is extracted from the proteomics data in UKB-PPP, which can be downloaded [HERE](https://www.biorxiv.org/content/10.1101/2022.06.17.496443v1.supplementary-material):
 
 ```
 library(ieugwasr)
