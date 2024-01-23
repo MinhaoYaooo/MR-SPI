@@ -130,5 +130,5 @@ In this relationship, MR-SPI detects one invalid IV (the first SNP):
 ```
 
 # Reference
-Yao, M., Miller, G. W., Vardarajan, B. N., Baccarelli, A. A., Guo, Z.^#, & Liu, Z.^# (2023). Robust Mendelian randomization analysis by automatically selecting valid genetic instruments with applications to identify plasma protein biomarkers for Alzheimer’s disease. medRxiv, 2023-02. [(https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5)](https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5)
+Yao, M., Miller, G. W., Vardarajan, B. N., Baccarelli, A. A., Guo, Z., & Liu, Z. (2023). Robust Mendelian randomization analysis by automatically selecting valid genetic instruments with applications to identify plasma protein biomarkers for Alzheimer’s disease. medRxiv, 2023-02. [(https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5)](https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5)
 
