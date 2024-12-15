@@ -130,5 +130,5 @@ In this relationship, MR-SPI detects one invalid IV (the first SNP):
 ```
 
 # Reference
-Yao, M., Miller, G. W., Vardarajan, B. N., Baccarelli, A. A., Guo, Z., & Liu, Z. (2023). Deciphering proteins in Alzheimer’s disease: A new Mendelian randomization method integrated with AlphaFold3 for 3D structure prediction. Cell Genomics, 2024-12. [([https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5](https://www.cell.com/cell-genomics/fulltext/S2666-979X(24)00329-X))]([https://www.medrxiv.org/content/10.1101/2023.02.20.23286200v5](https://www.cell.com/cell-genomics/fulltext/S2666-979X(24)00329-X))
+Yao, M., Miller, G. W., Vardarajan, B. N., Baccarelli, A. A., Guo, Z., & Liu, Z. (2023). Deciphering proteins in Alzheimer’s disease: A new Mendelian randomization method integrated with AlphaFold3 for 3D structure prediction. Cell Genomics, 2024-12. [(https://www.cell.com/cell-genomics/fulltext/S2666-979X(24)00329-X)](https://www.cell.com/cell-genomics/fulltext/S2666-979X(24)00329-X)
 
